@@ -61,10 +61,22 @@ func (ex *Exchange) Head(ctx context.Context) (*header.ExtendedHeader, error) {
 		Data:   &p2p_pb.ExtendedHeaderRequest_Origin{Origin: uint64(0)},
 		Amount: 1,
 	}
-	headers, err := ex.performRequest(ctx, req)
-	if err != nil {
-		return nil, err
+	results := make([]*header.ExtendedHeader, len(ex.trustedPeers))
+	for index, from := range ex.trustedPeers {
+		go func(from peer.ID) {
+			headers, err := doRequest(ctx, from, ex.host, req)
+			if err != nil {
+				log.Errorw("head from trusted peer failed", "trustedPeer", from, "err", err)
+				return
+			}
+			if len(headers) == 0 {
+				log.Errorw("head from trusted peer failed: no header", "trustedPeer", from)
+				return
+			}
+			results[index] = headers[0]
+		}(from)
 	}
+
 	return headers[0], nil
 }
 
@@ -135,7 +147,16 @@ func (ex *Exchange) performRequest(
 
 	// nolint:gosec // G404: Use of weak random number generator
 	index := rand.Intn(len(ex.trustedPeers))
-	stream, err := ex.host.NewStream(ctx, ex.trustedPeers[index], exchangeProtocolID)
+	return doRequest(ctx, ex.trustedPeers[index], ex.host, req)
+}
+
+func doRequest(
+	ctx context.Context,
+	from peer.ID,
+	host host.Host,
+	req *p2p_pb.ExtendedHeaderRequest,
+) ([]*header.ExtendedHeader, error) {
+	stream, err := host.NewStream(ctx, from, exchangeProtocolID)
 	if err != nil {
 		return nil, err
 	}
