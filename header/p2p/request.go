@@ -34,7 +34,7 @@ func (ehr *ExtendedHeaderRequest) UnmarshalBinary(data []byte) error {
 
 func (ehr *ExtendedHeaderRequest) ToProto() *p2p_pb.ExtendedHeaderRequest {
 	return &p2p_pb.ExtendedHeaderRequest{
-		Origin: ehr.Origin,
+		Data:   &p2p_pb.ExtendedHeaderRequest_Origin{Origin: ehr.Origin},
 		Amount: ehr.Amount,
 	}
 }

@@ -6,7 +6,7 @@ import p2p_pb "github.com/celestiaorg/celestia-node/header/p2p/pb"
 // Paired with UnmarshalExtendedHeaderRequest.
 func MarshalExtendedHeaderRequest(in *ExtendedHeaderRequest) ([]byte, error) {
 	out := &p2p_pb.ExtendedHeaderRequest{
-		Origin: in.Origin,
+		Data:   &p2p_pb.ExtendedHeaderRequest_Origin{Origin: in.Origin},
 		Amount: in.Amount,
 	}
 	return out.Marshal()
@@ -21,7 +21,7 @@ func UnmarshalExtendedHeaderRequest(data []byte) (*ExtendedHeaderRequest, error)
 		return nil, err
 	}
 	return &ExtendedHeaderRequest{
-		Origin: in.Origin,
+		Origin: in.GetOrigin(),
 		Amount: in.Amount,
 	}, nil
 }
