@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
 	logging "github.com/ipfs/go-log/v2"
@@ -61,23 +62,39 @@ func (ex *Exchange) Head(ctx context.Context) (*header.ExtendedHeader, error) {
 		Data:   &p2p_pb.ExtendedHeaderRequest_Origin{Origin: uint64(0)},
 		Amount: 1,
 	}
-	results := make([]*header.ExtendedHeader, len(ex.trustedPeers))
-	for index, from := range ex.trustedPeers {
+	results := make([]*header.ExtendedHeader, 0)
+	resultCh := make(chan *header.ExtendedHeader)
+	wg := sync.WaitGroup{}
+	wg.Add(len(ex.trustedPeers))
+	for _, from := range ex.trustedPeers {
 		go func(from peer.ID) {
+			defer wg.Done()
 			headers, err := doRequest(ctx, from, ex.host, req)
 			if err != nil {
-				log.Errorw("head from trusted peer failed", "trustedPeer", from, "err", err)
+				log.Errorw("head request from trusted peer failed", "trustedPeer", from, "err", err)
 				return
 			}
-			if len(headers) == 0 {
-				log.Errorw("head from trusted peer failed: no header", "trustedPeer", from)
+			if headers[0].Hash().String() == "" {
+				log.Warnw("head request from trusted peer failed: empty header", "trustedPeer", from)
 				return
 			}
-			results[index] = headers[0]
+
+			resultCh <- headers[0]
 		}(from)
 	}
 
-	return headers[0], nil
+	go func() {
+		wg.Wait()
+		close(resultCh)
+	}()
+
+	for header := range resultCh {
+		results = append(results, header)
+	}
+	if len(results) == 0 {
+		return nil, header.ErrNotFound
+	}
+	return header.GetFrequentHeader(results), nil
 }
 
 // GetByHeight performs a request for the ExtendedHeader at the given
