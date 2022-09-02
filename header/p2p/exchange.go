@@ -53,7 +53,7 @@ func NewExchange(host host.Host, peers peer.IDSlice) *Exchange {
 	}
 }
 
-// Head requests the latest ExtendedHeader. Note that the ExtendedHeader
+// Head requests the latest ExtendedHeader from all of its trusted peers. Note that the ExtendedHeader
 // must be verified thereafter.
 func (ex *Exchange) Head(ctx context.Context) (*header.ExtendedHeader, error) {
 	log.Debug("requesting head")
@@ -62,8 +62,7 @@ func (ex *Exchange) Head(ctx context.Context) (*header.ExtendedHeader, error) {
 		Data:   &p2p_pb.ExtendedHeaderRequest_Origin{Origin: uint64(0)},
 		Amount: 1,
 	}
-	results := make([]*header.ExtendedHeader, 0)
-	resultCh := make(chan *header.ExtendedHeader)
+	resultCh := make(chan *header.ExtendedHeader, len(ex.trustedPeers))
 	wg := sync.WaitGroup{}
 	wg.Add(len(ex.trustedPeers))
 	for _, from := range ex.trustedPeers {
@@ -82,19 +81,27 @@ func (ex *Exchange) Head(ctx context.Context) (*header.ExtendedHeader, error) {
 			resultCh <- headers[0]
 		}(from)
 	}
-
-	go func() {
-		wg.Wait()
-		close(resultCh)
-	}()
-
-	for header := range resultCh {
-		results = append(results, header)
+	wg.Wait()
+	// read results
+	results := make([]*header.ExtendedHeader, 0)
+	for range ex.trustedPeers {
+		res := <-resultCh
+		results = append(results, res)
 	}
-	if len(results) == 0 {
+
+	// return latest head
+	latest := int64(0)
+	var head *header.ExtendedHeader
+	for _, res := range results {
+		if res.Height > latest {
+			head = res
+			latest = res.Height
+		}
+	}
+	if head == nil {
 		return nil, header.ErrNotFound
 	}
-	return header.GetFrequentHeader(results), nil
+	return head, nil
 }
 
 // GetByHeight performs a request for the ExtendedHeader at the given

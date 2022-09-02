@@ -24,11 +24,55 @@ func TestExchange_RequestHead(t *testing.T) {
 	host, peer := createMocknet(t)
 	exchg, store := createP2PExAndServer(t, host, peer)
 	// perform header request
-	header, err := exchg.Head(context.Background())
+	head, err := exchg.Head(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, store.headers[store.headHeight].Height, header.Height)
-	assert.Equal(t, store.headers[store.headHeight].Hash(), header.Hash())
+	assert.Equal(t, store.headers[store.headHeight].Height, head.Height)
+	assert.Equal(t, store.headers[store.headHeight].Hash(), head.Hash())
+}
+
+// TestExchange_RequestHead_ReturnsLatest tests whether exchange returns the latest
+// Head from its trusted peers
+func TestExchange_RequestHead_ReturnsLatest(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// give exchange 3 trusted peers
+	net, err := mocknet.FullMeshConnected(4)
+	require.NoError(t, err)
+	host := net.Hosts()[0]
+	tpeers := make([]peer.ID, len(net.Hosts()[1:]))
+	for i, tpeer := range net.Hosts()[1:] {
+		tpeers[i] = tpeer.ID()
+	}
+	exchg := NewExchange(host, tpeers)
+
+	// load trustedPeers with different chain lengths
+	suite := header.NewTestSuite(t, 3)
+	chain := suite.GenExtendedHeaders(5)
+	for _, tpeer := range net.Hosts()[1:] {
+		// increase chain length by 1
+		chain = append(chain, suite.GenExtendedHeader())
+
+		store := &mockStore{
+			make(map[int64]*header.ExtendedHeader),
+			chain[len(chain)-1].Height,
+		}
+		for _, h := range chain {
+			store.headers[h.Height] = h
+		}
+		serverSideEx := NewExchangeServer(tpeer, store)
+		err := serverSideEx.Start(ctx)
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			serverSideEx.Stop(ctx) //nolint:errcheck
+		})
+	}
+	got, err := exchg.Head(ctx)
+	require.NoError(t, err)
+	// ensure that returned head is the tip of the chain
+	assert.Equal(t, chain[len(chain)-1].Height, got.Height)
 }
 
 func TestExchange_RequestHeader(t *testing.T) {
@@ -103,7 +147,7 @@ func createMocknet(t *testing.T) (libhost.Host, libhost.Host) {
 	return net.Hosts()[0], net.Hosts()[1]
 }
 
-// createP2PExAndServer creates a Exchange with 5 headers already in its store.
+// createP2PExAndServer creates an Exchange with 5 headers already in its store.
 func createP2PExAndServer(t *testing.T, host, tpeer libhost.Host) (header.Exchange, *mockStore) {
 	store := createStore(t, 5)
 	serverSideEx := NewExchangeServer(tpeer, store)
