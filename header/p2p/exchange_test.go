@@ -64,9 +64,9 @@ func TestExchange_RequestHead_ReturnsLatest(t *testing.T) {
 		serverSideEx := NewExchangeServer(tpeer, store)
 		err := serverSideEx.Start(ctx)
 		require.NoError(t, err)
-
 		t.Cleanup(func() {
-			serverSideEx.Stop(ctx) //nolint:errcheck
+			err = serverSideEx.Stop(ctx)
+			require.NoError(t, err)
 		})
 	}
 	got, err := exchg.Head(ctx)
