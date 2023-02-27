@@ -109,7 +109,7 @@ func (s *Syncer[H]) networkHead(ctx context.Context) (H, error) {
 func (s *Syncer[H]) incomingNetHead(ctx context.Context, netHead H) pubsub.ValidationResult {
 	// Try to short-circuit netHead with append. If not adjacent/from future - try it as new network
 	// header
-	_, err := s.store.Append(ctx, netHead)
+	err := s.store.Append(ctx, netHead)
 	if err == nil {
 		// a happy case where we appended maybe head directly, so accept
 		s.syncedHead.Store(&netHead)

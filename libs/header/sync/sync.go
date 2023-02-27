@@ -238,8 +238,8 @@ func (s *Syncer[H]) doSync(ctx context.Context, fromHead, toHead H) (err error) 
 	s.stateLk.Unlock()
 
 	for processed := 0; from < to; from += uint64(processed) {
-		processed, err = s.processHeaders(ctx, from, to)
-		if err != nil && processed == 0 {
+		err = s.processHeaders(ctx, from, to)
+		if err != nil {
 			break
 		}
 		if s.metrics != nil {
@@ -256,17 +256,17 @@ func (s *Syncer[H]) doSync(ctx context.Context, fromHead, toHead H) (err error) 
 
 // processHeaders gets and stores headers starting at the given 'from' height up to 'to' height -
 // [from:to]
-func (s *Syncer[H]) processHeaders(ctx context.Context, from, to uint64) (int, error) {
+func (s *Syncer[H]) processHeaders(ctx context.Context, from, to uint64) error {
 	headers, err := s.findHeaders(ctx, from, to)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	amount, err := s.store.Append(ctx, headers...)
-	if err == nil && amount > 0 {
-		s.syncedHead.Store(&headers[amount-1])
+	err = s.store.Append(ctx, headers...)
+	if err == nil {
+		s.syncedHead.Store(&headers[len(headers)-1])
 	}
-	return amount, err
+	return err
 }
 
 // findHeaders gets headers from either remote peers or from local cache of headers received by
