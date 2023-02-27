@@ -7,16 +7,21 @@ import (
 
 	"github.com/celestiaorg/celestia-app/pkg/appconsts"
 	"github.com/celestiaorg/celestia-app/pkg/wrapper"
+	"github.com/celestiaorg/rsmt2d"
+
 	"github.com/celestiaorg/celestia-node/fraud"
 	"github.com/celestiaorg/celestia-node/header"
 	pb "github.com/celestiaorg/celestia-node/share/eds/byzantine/pb"
 	"github.com/celestiaorg/celestia-node/share/ipld"
-	"github.com/celestiaorg/rsmt2d"
 )
 
 func init() {
 	fraud.Register(&BadEncodingProof{})
 }
+
+const (
+	BadEncoding fraud.ProofType = "badencoding"
+)
 
 type BadEncodingProof struct {
 	headerHash  []byte
@@ -51,7 +56,7 @@ func CreateBadEncodingProof(
 
 // Type returns type of fraud proof.
 func (p *BadEncodingProof) Type() fraud.ProofType {
-	return fraud.BadEncoding
+	return BadEncoding
 }
 
 // HeaderHash returns block hash.
