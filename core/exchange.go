@@ -59,7 +59,14 @@ func NewExchange(
 func (ce *Exchange) GetByHeight(ctx context.Context, height uint64) (*header.ExtendedHeader, error) {
 	log.Debugw("requesting header", "height", height)
 	intHeight := int64(height)
-	return ce.getExtendedHeaderByHeight(ctx, &intHeight)
+	now := time.Now()
+	h, err := ce.getExtendedHeaderByHeight(ctx, &intHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	ce.metrics.requestDurationPerHeader(ctx, time.Since(now), 1)
+	return h, err
 }
 
 func (ce *Exchange) GetRangeByHeight(
@@ -102,7 +109,8 @@ func (ce *Exchange) getRangeByHeight(ctx context.Context, from, amount uint64) (
 	for i := range headers {
 		i := i
 		errGroup.Go(func() error {
-			extHeader, err := ce.GetByHeight(ctx, from+uint64(i))
+			height := int64(from) + int64(i)
+			extHeader, err := ce.getExtendedHeaderByHeight(ctx, &height)
 			if err != nil {
 				return err
 			}
@@ -121,6 +129,7 @@ func (ce *Exchange) getRangeByHeight(ctx context.Context, from, amount uint64) (
 
 func (ce *Exchange) Get(ctx context.Context, hash libhead.Hash) (*header.ExtendedHeader, error) {
 	log.Debugw("requesting header", "hash", hash.String())
+	now := time.Now()
 	block, err := ce.fetcher.GetBlockByHash(ctx, hash)
 	if err != nil {
 		return nil, fmt.Errorf("fetching block by hash %s: %w", hash.String(), err)
@@ -155,6 +164,8 @@ func (ce *Exchange) Get(ctx context.Context, hash libhead.Hash) (*header.Extende
 	if err != nil {
 		return nil, fmt.Errorf("storing EDS to eds.Store for height %d: %w", &block.Height, err)
 	}
+
+	ce.metrics.requestByHashDuration(ctx, time.Since(now))
 	return eh, nil
 }
 
@@ -163,7 +174,14 @@ func (ce *Exchange) Head(
 	_ ...libhead.HeadOption[*header.ExtendedHeader],
 ) (*header.ExtendedHeader, error) {
 	log.Debug("requesting head")
-	return ce.getExtendedHeaderByHeight(ctx, nil)
+	now := time.Now()
+	h, err := ce.getExtendedHeaderByHeight(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ce.metrics.requestDurationPerHeader(ctx, time.Since(now), 1)
+	return h, nil
 }
 
 func (ce *Exchange) getExtendedHeaderByHeight(ctx context.Context, height *int64) (*header.ExtendedHeader, error) {

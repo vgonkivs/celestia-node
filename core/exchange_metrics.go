@@ -11,6 +11,7 @@ import (
 
 type exchangeMetrics struct {
 	getByHeightDuration metric.Float64Histogram
+	getByHashDuration   metric.Float64Histogram
 }
 
 func newExchangeMetrics() (*exchangeMetrics, error) {
@@ -25,6 +26,13 @@ func newExchangeMetrics() (*exchangeMetrics, error) {
 		return nil, err
 	}
 
+	m.getByHashDuration, err = meter.Float64Histogram(
+		"core_ex_get_by_hash_request_time",
+		metric.WithDescription("core exchange client getByHash request time in seconds"),
+	)
+	if err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -45,5 +53,11 @@ func (m *exchangeMetrics) requestDurationPerHeader(ctx context.Context, duration
 		}
 		durationPerHeader := duration.Seconds() / float64(amount)
 		m.getByHeightDuration.Record(ctx, durationPerHeader)
+	})
+}
+
+func (m *exchangeMetrics) requestByHashDuration(ctx context.Context, duration time.Duration) {
+	m.observe(ctx, func(ctx context.Context) {
+		m.getByHashDuration.Record(ctx, duration.Seconds())
 	})
 }
