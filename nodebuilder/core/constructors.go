@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/celestiaorg/celestia-node/libs/utils"
 )
@@ -35,7 +34,8 @@ func grpcClient(lc fx.Lifecycle, cfg Config) (*grpc.ClientConn, error) {
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, grpc.WithUnaryInterceptor(authInterceptor(xToken)))
+		authCreds := tokenAuth{token: xToken, requireTLS: cfg.TLSEnabled}
+		opts = append(opts, grpc.WithPerRPCCredentials(authCreds))
 	}
 
 	endpoint := net.JoinHostPort(cfg.IP, cfg.Port)
@@ -55,18 +55,19 @@ func grpcClient(lc fx.Lifecycle, cfg Config) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func authInterceptor(xtoken string) grpc.UnaryClientInterceptor {
-	return func(
-		ctx context.Context,
-		method string,
-		req, reply interface{},
-		cc *grpc.ClientConn,
-		invoker grpc.UnaryInvoker,
-		opts ...grpc.CallOption,
-	) error {
-		ctx = metadata.AppendToOutgoingContext(ctx, "x-token", xtoken)
-		return invoker(ctx, method, req, reply, cc, opts...)
-	}
+// tokenAuth implements the credentials.PerRPCCredentials interface
+// to support token-based auth for unary and streaming grpc requests
+type tokenAuth struct {
+	token      string
+	requireTLS bool
+}
+
+func (t tokenAuth) GetRequestMetadata(ctx context.Context, in ...string) (map[string]string, error) {
+	return map[string]string{"x-token": t.token}, nil
+}
+
+func (t tokenAuth) RequireTransportSecurity() bool {
+	return t.requireTLS
 }
 
 // parseTokenPath retrieves the authentication token from a JSON file at the specified path.
