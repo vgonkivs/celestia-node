@@ -1,0 +1,91 @@
+syntax = "proto3";
+package blob.pb;
+
+option go_package = "github.com/celestiaorg/celestia-node/pb/blob";
+
+import "tendermint/types/types.proto";
+import "blob/v1/blob.proto";
+import "pb/proof.proto";
+import "pb/error.proto";
+import "pb/options.proto";
+
+message SubmitDataRequest{
+  repeated SubmitDataMessage data = 1;
+  .pb.Options options = 2;
+}
+
+message SubmitBlobRequest {
+  repeated proto.blob.v1.BlobProto blob = 1;
+  .pb.Options options = 2;
+}
+
+message SubmitResponse {
+  int64 height = 1;
+  bytes txHash = 2;
+  .pb.Error error = 3;
+}
+
+message SubmitDataMessage {
+  bytes namespace = 1;
+  repeated bytes data = 2;
+}
+
+message GetBlobRequest {
+  int64 height = 1;
+  bytes namespace = 2;
+  bytes commitment = 3;
+}
+
+message GetAllRequest {
+  int64 height = 1;
+  bytes namespace = 2;
+}
+
+message GetAllResponse {
+  repeated BlobData blobs = 1;
+  .pb.Error error = 2;
+}
+
+message BlobData {
+  proto.blob.v1.BlobProto blob = 1;
+  BlobProof proof = 2;
+  int64 index = 3; // ODS index
+}
+
+message BlobProof {
+  repeated bytes subtreeRoots = 1;
+  repeated proof.pb.Proof nmtProof = 2;
+  tendermint.types.RowProof rowProof = 3;
+}
+
+message IncludedRequest {
+  int64 height = 1;
+  bytes namespace = 2;
+  BlobProof proof = 3;
+}
+
+message IncludedResponse {
+  bool included = 1;
+  .pb.Error err = 2;
+}
+
+message SubscribeRequest {
+  bytes namespace = 1;
+}
+
+message SubscribeResponse {
+  repeated BlobData blobs = 1;
+  int64 height = 2;
+  .pb.Error err = 3;
+}
+
+
+service BlobService {
+  rpc SubmitData(SubmitDataRequest) returns (SubmitResponse);
+  rpc SubmitBlob(SubmitBlobRequest) returns (SubmitResponse);
+  rpc GetBlob(GetBlobRequest) returns (BlobData);
+  rpc GetAll(GetAllRequest) returns (GetAllResponse);
+  rpc GetProof(GetBlobRequest) returns (BlobData);
+  rpc Included(IncludedRequest) returns (IncludedRequest);
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+}

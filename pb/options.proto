@@ -1,0 +1,13 @@
+syntax="proto3";
+package pb;
+option go_package = "github.com/celestiaorg/celestia-node/pb";
+
+import "pb/types.proto";
+
+message Options {
+  string signerAddress = 1;
+  string keyName = 2;
+  . pb.FloatValue gasPrice = 3; // allows to check for unset value
+  uint64 gas = 4;
+  string feeGranterAddress = 5;
+}

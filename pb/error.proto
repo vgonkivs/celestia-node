@@ -1,0 +1,15 @@
+syntax="proto3";
+package pb;
+option go_package = "github.com/celestiaorg/celestia-node/pb";
+
+enum StatusCode {
+  NOT_FOUND = 0;
+  TIMEOUT = 1;
+  BAD_REQUEST = 2;
+  INTERNAL = 3;
+}
+
+message Error {
+  StatusCode code = 1;
+  string reason =2;
+}
