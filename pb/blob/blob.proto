@@ -27,7 +27,8 @@ message SubmitResponse {
 
 message SubmitDataMessage {
   bytes namespace = 1;
-  repeated bytes data = 2;
+  bytes data = 2;
+  uint32 shareVersion = 3;
 }
 
 message GetBlobRequest {
