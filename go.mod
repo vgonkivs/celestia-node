@@ -1,6 +1,7 @@
 module github.com/celestiaorg/celestia-node
 
 go 1.22.3
+toolchain go1.22.5
 
 require (
 	cosmossdk.io/errors v1.0.1
@@ -8,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/alecthomas/jsonschema v0.0.0-20220216202328-9eeeec9d044b
 	github.com/benbjohnson/clock v1.3.5
-	github.com/celestiaorg/celestia-app v1.11.0
+	github.com/celestiaorg/celestia-app v1.22.0
 	github.com/celestiaorg/go-fraud v0.2.1
 	github.com/celestiaorg/go-header v0.6.2
 	github.com/celestiaorg/go-libp2p-messenger v0.2.0
