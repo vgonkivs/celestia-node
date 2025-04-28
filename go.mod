@@ -12,8 +12,8 @@ require (
 	github.com/celestiaorg/go-fraud v0.2.1
 	github.com/celestiaorg/go-header v0.6.2
 	github.com/celestiaorg/go-libp2p-messenger v0.2.0
-	github.com/celestiaorg/nmt v0.21.0
-	github.com/celestiaorg/rsmt2d v0.13.1
+	github.com/celestiaorg/nmt v0.22.0
+	github.com/celestiaorg/rsmt2d v0.14.0
 	github.com/cosmos/cosmos-sdk v0.46.16
 	github.com/cristalhq/jwt v1.2.0
 	github.com/dgraph-io/badger/v4 v4.2.1-0.20240106094458-1c417aa3799c
