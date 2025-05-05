@@ -184,9 +184,6 @@ func shrexServerComponents(cfg *Config) fx.Option {
 				cfg.ShrexServer.WithNetworkID(network.String())
 				return shrex.NewServer(cfg.ShrexServer, host, store)
 			},
-			fx.OnStart(func(ctx context.Context, server *shrex.Server) error {
-				return server.Start(ctx)
-			}),
 			fx.OnStop(func(ctx context.Context, server *shrex.Server) error {
 				return server.Stop(ctx)
 			})),
