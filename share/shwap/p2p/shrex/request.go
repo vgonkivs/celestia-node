@@ -21,6 +21,8 @@ var registry = []newRequestID{
 	func() request {
 		return &shwap.EdsID{}
 	},
+	func() request { return &shwap.SampleIDs{} },
+	func() request { return &shwap.RowID{} },
 }
 
 // request represents compatible generalised interface for requests.
