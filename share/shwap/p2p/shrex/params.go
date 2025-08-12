@@ -59,14 +59,6 @@ func DefaultServerParameters() *ServerParams {
 	}
 }
 
-func defaultParameters() *Parameters {
-	return &Parameters{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: time.Minute, // based on max observed sample time for 256 blocks (~50s)
-
-	}
-}
-
 const errSuffix = "value should be positive and non-zero"
 
 func (p *Parameters) Validate() error {

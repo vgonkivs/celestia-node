@@ -227,7 +227,7 @@ func (sg *Getter) GetSamples(
 		if !shrex.ErrorContains(err, getErr) {
 			err = errors.Join(err, getErr)
 		}
-		log.Debugw("eds: request failed",
+		log.Debugw("samples: request failed",
 			"hash", header.DAH.String(),
 			"peer", peer.String(),
 			"attempt", attempt,
