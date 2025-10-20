@@ -48,7 +48,7 @@ require (
 	github.com/klauspost/reedsolomon v1.12.5
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-kad-dht v0.34.0
-	github.com/libp2p/go-libp2p-pubsub v0.14.0
+	github.com/libp2p/go-libp2p-pubsub v0.15.0
 	github.com/libp2p/go-libp2p-record v0.3.1
 	github.com/libp2p/go-libp2p-routing-helpers v0.7.5
 	github.com/mitchellh/go-homedir v1.1.0
