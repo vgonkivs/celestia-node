@@ -1,0 +1,69 @@
+name: Dependabot Go Mod Tidy
+
+# Dependabot edits go.mod/go.sum in place and never runs `go mod tidy`, so
+# indirect requires drift and the go_mod_tidy_check / go_mod_parity_check jobs
+# fail on every bot PR. This workflow runs `go mod tidy` across every module on
+# Dependabot PRs and pushes a fixup commit back onto the PR branch.
+#
+# The push uses a GitHub App installation token, not GITHUB_TOKEN: on Dependabot
+# events GITHUB_TOKEN is read-only, and a push made with it would not re-trigger
+# the required status checks.
+
+on:
+  pull_request:
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "**/go.mod"
+      - "**/go.sum"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  tidy:
+    name: Tidy all Go modules
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Run go mod tidy in every module
+        run: |
+          find . -name go.mod -not -path '*/vendor/*' -print0 | while IFS= read -r -d '' modfile; do
+            dir=$(dirname "$modfile")
+            echo "::group::go mod tidy in $dir"
+            ( cd "$dir" && go mod tidy )
+            echo "::endgroup::"
+          done
+
+      - name: Commit and push fixup if anything changed
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if git diff --quiet; then
+            echo "all modules already tidy — nothing to do"
+            exit 0
+          fi
+          git config user.name "celestia-node[bot]"
+          git config user.email "celestia-node[bot]@users.noreply.github.com"
+          git commit -am "chore(deps): go mod tidy after dependabot bump"
+          git push origin "HEAD:$HEAD_REF"
