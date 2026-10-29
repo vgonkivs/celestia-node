@@ -60,7 +60,6 @@ func TestFullReconstructFromBridge(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := sw.DefaultTestConfig(node.Bridge)
-	cfg.Share.UseShareExchange = false
 	full := sw.NewNodeWithConfig(node.Bridge, cfg)
 	err = full.Start(ctx)
 	require.NoError(t, err)
@@ -171,7 +170,6 @@ func TestFullReconstructFromFulls(t *testing.T) {
 
 	cfg := nodebuilder.DefaultConfig(node.Bridge)
 	setTimeInterval(cfg, defaultTimeInterval)
-	cfg.Share.UseShareExchange = false
 	cfg.Share.Discovery.PeersLimit = 0
 	cfg.Header.TrustedPeers = []string{lnBootstrapper1[0].String()}
 	full1 := sw.NewNodeWithConfig(node.Bridge, cfg)
@@ -303,7 +301,6 @@ func TestFullReconstructFromLights(t *testing.T) {
 
 	cfg = nodebuilder.DefaultConfig(node.Bridge)
 	setTimeInterval(cfg, defaultTimeInterval)
-	cfg.Share.UseShareExchange = false
 	cfg.Header.TrustedPeers = append(cfg.Header.TrustedPeers, addrsBridge[0].String())
 	nodesConfig := nodebuilder.WithBootstrappers([]peer.AddrInfo{*bootstrapperAddr})
 	full := sw.NewNodeWithConfig(node.Bridge, cfg, nodesConfig)
