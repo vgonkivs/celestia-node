@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"testing"
@@ -14,9 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/celestiaorg/celestia-app/v10/pkg/appconsts"
-	"github.com/celestiaorg/celestia-app/v10/test/util/genesis"
-	"github.com/celestiaorg/celestia-app/v10/test/util/testnode"
+	"github.com/celestiaorg/celestia-app/v11/pkg/appconsts"
+	"github.com/celestiaorg/celestia-app/v11/test/util/genesis"
 	libhead "github.com/celestiaorg/go-header"
 
 	"github.com/celestiaorg/celestia-node/core"
@@ -127,7 +127,9 @@ func (s *IntegrationTestSuite) TestGenerateJSONBlock() {
 	require.NoError(s.network.WaitForNextBlock())
 
 	// download the block that the tx was in
-	res, err := testnode.QueryWithoutProof(s.network.Context.Context, resp.TxHash)
+	txHash, err := hex.DecodeString(resp.TxHash)
+	require.NoError(err)
+	res, err := s.network.Client.Tx(s.network.GoContext(), txHash, false)
 	require.NoError(err)
 
 	block, err := s.network.Client.Block(s.network.GoContext(), &res.Height)
